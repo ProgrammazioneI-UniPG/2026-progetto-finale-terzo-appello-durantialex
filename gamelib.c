@@ -383,7 +383,7 @@ static void combatti(int id) {
 
     if (potenza_attacco >= difficolta_nemico) {
         printf("Colpo critico! Hai sconfitto il nemico.\n");
-        
+
         // Se è il Demotorzone, vittoria gestita tramite flag o stato
         if (nemico_presente == demotorzone) {
             printf("IL DEMOTORZONE E' CADUTO!\n");
@@ -391,6 +391,7 @@ static void combatti(int id) {
             // basandoci sul fatto che il nemico in quella zona diventerà 'nessun_nemico'
         }
         // Il nemico viene rimosso dalla zona
+        nemico_presente = nessun_nemico;
         if (g->mondo == 0) g->pos_mondoreale->nemico = nessun_nemico;
         else g->pos_soprasotto->nemico = nessun_nemico;
         
@@ -870,6 +871,7 @@ void imposta_gioco() {
         giocatori[i]->fortuna = rand()%20+1;
         giocatori[i]->pos_mondoreale = prima_zona_m;
         giocatori[i]->pos_soprasotto = prima_zona_s;
+        vita_giocatori[i] = 1;// Vivo
         giocatori[i]->mondo = 0; // Inizia nel Mondo Reale
         for(int j=0; j<3; j++){
             giocatori[i]->zaino[j] = nessun_oggetto;
@@ -1011,9 +1013,12 @@ void gioca() {
                             break;
                         }
                         else{
-                        avanza(id);
-                        turno_concluso = 1; 
-                        break;
+                            avanza(id);
+                            if(nemico_qui != nessun_nemico){
+                                nemico_qui = nessun_nemico; // Aggiorniamo la variabile locale dopo il movimento
+                            }
+                            turno_concluso = 1; 
+                            break;
                         }
 
                     case 2:
@@ -1024,6 +1029,9 @@ void gioca() {
                         }
                         else{
                         indietreggia(id);
+                        if(nemico_qui != nessun_nemico){
+                            nemico_qui = nessun_nemico; // Aggiorniamo la variabile locale dopo il movimento
+                        }
                         turno_concluso = 1;
                         break;
                         }
@@ -1091,6 +1099,13 @@ void gioca() {
                             }
                         } else {
                             printf("Nel Soprasotto puoi solo usare la bussola. Quale slot (1-3)? ");
+                            for(int i=0; i<3; i++) {
+                                if(giocatori[id]->zaino[i] != nessun_oggetto) {
+                                    printf("%d: %s\n", i+1, nome_oggetto(giocatori[id]->zaino[i]));
+                                } else {
+                                    printf("%d: [Vuoto]\n", i+1);
+                                }
+                            }
                             int slot; 
                             slot = leggi_int();
                             if(slot >= 1 && slot <= 3 && giocatori[id]->zaino[slot-1] == bussola) usa_bussola(id);
@@ -1104,16 +1119,15 @@ void gioca() {
                         break;
                     case 6: 
                         // Salviamo il tipo di nemico PRIMA del combattimento
-                        enum Tipo_nemico nemico_da_battere = giocatori[id]->pos_soprasotto->nemico;
                         int nel_soprasotto = giocatori[id]->mondo;
                         combatti(id);
 
-                        if(nemico_da_battere != nessun_nemico){
+                        if(nemico_qui != nessun_nemico){
                             // Se il giocatore è ancora vivo dopo lo scontro
                             if (giocatori[id] != NULL) { 
                                 // Se era nel soprasotto e il nemico era il boss, e ORA non c'è più (perché ucciso)
                                 if (nel_soprasotto == 1 && 
-                                    nemico_da_battere == demotorzone && 
+                                    nemico_qui == demotorzone && 
                                     giocatori[id]->pos_soprasotto->nemico == nessun_nemico) {
                                     
                                     vittoria = 1;
@@ -1166,7 +1180,7 @@ void crediti() {
     } else {
         for (int i = 0; i < num_partecipanti_totali; i++) {
             // Salta se il nome è vuoto (protezione extra)
-            if (strlen(partecipanti[i]) == 0) continue;
+            if (partecipanti[i][0] == '\0' || partecipanti[i][0] == ' ') continue;
 
             int ha_vinto = 0;
             for (int j = 0; j < vincitori_count; j++) {
@@ -1180,6 +1194,7 @@ void crediti() {
                 printf("- %s [TRIONFATORE]\n", partecipanti[i]);
             } 
             else if(!ha_vinto) {
+               
                 if(vita_giocatori[i] == 1) {
                     printf("- %s [SOPRAVVISSUTO]\n", partecipanti[i]);
                 } else {
