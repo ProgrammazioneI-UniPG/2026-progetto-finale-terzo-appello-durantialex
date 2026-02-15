@@ -17,6 +17,7 @@ int main() {
             int c;
             while ((c = getchar()) != '\n' && c != EOF);
         }
+        
         // Una volta letto il numero, puliamo comunque il buffer dal '\n' residuo
         while (getchar() != '\n'); 
 
